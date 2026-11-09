@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SKUs · Lumina Market Intelligence</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="skus">
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="brand"><span class="brand-dot"></span>Lumina Market Intelligence</div>
+    <div class="nav-links">
+      <a href="brand-owners.html" data-nav="brand-owners">Brand Owners</a>
+      <a href="overview.html" data-nav="overview">Overview</a>
+      <a href="brand-level.html" data-nav="brand-level">Brand Level</a>
+      <a href="skus.html" data-nav="skus">SKUs</a>
+      <a href="channels.html" data-nav="channels">Channels</a>
+      <a href="regions.html" data-nav="regions">Regions</a>
+    </div>
+    <div class="nav-right">
+      <div class="category-select-wrap">
+        <label for="category-select" class="category-select-label">Category</label>
+        <select id="category-select" class="category-select"></select>
+      </div>
+      <div class="period-pills">
+        <button class="period-pill" data-period="Apr-24">Apr-24</button>
+        <button class="period-pill" data-period="Apr-25">Apr-25</button>
+        <button class="period-pill" data-period="Apr-26">Apr-26</button>
+        <button class="period-pill" data-period="ALL">3-Yr Total</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title" id="page-title">SKU Deep Dive</h1>
+    <p class="page-subtitle" id="page-subtitle">Loading…</p>
+  </div>
+
+  <div id="skus-root"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
