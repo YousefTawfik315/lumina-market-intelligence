@@ -155,8 +155,26 @@ function escapeHTML(str) {
 /* Fetch helper                                                            */
 /* ---------------------------------------------------------------------- */
 
+// Portfolio demo: no live backend. Every /api/... call the app makes is
+// mapped to a pre-baked static JSON file instead (generated once from the
+// real backend, see data/ folder), so this entire site is static-hostable
+// (Vercel, GitHub Pages, etc.) with zero server to run or pay for.
+const STATIC_MODE = true;
+
+function staticPathFor(path) {
+  const [endpoint, qs] = path.split('?');
+  const endpointSlug = endpoint.replace(/^\/api\//, '').replace(/\//g, '-');
+  const params = new URLSearchParams(qs || '');
+  const parts = [];
+  if (params.has('period')) parts.push(params.get('period'));
+  if (params.has('category')) parts.push(slugify(params.get('category')));
+  if (params.has('segment')) parts.push(slugify(params.get('segment')));
+  const fileName = parts.length ? parts.join('__') : 'index';
+  return `data/${endpointSlug}/${fileName}.json`;
+}
+
 async function fetchJSON(path) {
-  const url = `${APP.API_BASE}${path}`;
+  const url = STATIC_MODE ? staticPathFor(path) : `${APP.API_BASE}${path}`;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Request failed (${res.status}) for ${path}`);
