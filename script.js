@@ -11,7 +11,7 @@
    - Brand Level / Channels / Regions pages are adaptive across ALL real
      categories (via /api/categories + a category selector). Each category's
      backend response says has_segments + segments[]/segment_names[] -- when
-     EVA Category 3 gives a meaningful split (e.g. GPC / Medical for All
+     Product Category 3 gives a meaningful split (e.g. GPC / Medical for All
      Purpose Cream) those segments are shown; otherwise a single 'Overall'
      segment is shown. The frontend never hardcodes GPC/Medical -- it always
      loops over whatever segments the backend returns.
@@ -209,7 +209,7 @@ function initNav(onPeriodChange) {
     if (a.getAttribute('data-nav') === pageName) a.classList.add('active');
   });
 
-  const savedPeriod = sessionStorage.getItem('eva_period');
+  const savedPeriod = sessionStorage.getItem('lmi_period');
   if (savedPeriod && APP.PERIODS_SELECTABLE.includes(savedPeriod)) APP.state.period = savedPeriod;
 
   const pillsWrap = document.querySelector('.period-pills');
@@ -219,7 +219,7 @@ function initNav(onPeriodChange) {
       btn.classList.toggle('active', p === APP.state.period);
       btn.addEventListener('click', () => {
         APP.state.period = p;
-        sessionStorage.setItem('eva_period', p);
+        sessionStorage.setItem('lmi_period', p);
         pillsWrap.querySelectorAll('.period-pill').forEach((b) => b.classList.toggle('active', b === btn));
         if (typeof onPeriodChange === 'function') onPeriodChange(APP.state.period);
       });
@@ -247,7 +247,7 @@ async function initCategorySelector(onCategoryChange) {
   }
 
   const names = categories.map((c) => c.name);
-  // All Purpose Cream is EVA's flagship line (and the only category with a
+  // All Purpose Cream is Lumina's flagship line (and the only category with a
   // GPC/Medical split most pages were originally built around) -- bubble it
   // to the front so it's the default selection, not just whatever sorts
   // first by total sales.
@@ -257,13 +257,13 @@ async function initCategorySelector(onCategoryChange) {
   }
   select.innerHTML = names.map((name) => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`).join('');
 
-  const saved = sessionStorage.getItem('eva_category');
+  const saved = sessionStorage.getItem('lmi_category');
   APP.state.category = (saved && names.includes(saved)) ? saved : (names[0] || null);
   if (APP.state.category) select.value = APP.state.category;
 
   select.addEventListener('change', () => {
     APP.state.category = select.value;
-    sessionStorage.setItem('eva_category', APP.state.category);
+    sessionStorage.setItem('lmi_category', APP.state.category);
     if (typeof onCategoryChange === 'function') onCategoryChange(APP.state.category);
   });
 
@@ -291,18 +291,18 @@ function barListHTML(items, opts) {
   const valueKey = opts.valueKey || 'sales';
   const labelKey = opts.labelKey || 'brand';
   const shareKey = opts.shareKey || 'share_of_subcategory_pct';
-  const isEvaFn = opts.isEvaFn || (() => false);
+  const isHeroFn = opts.isHeroFn || (() => false);
   const val = (it) => anchorVal(it, valueKey);
   const max = Math.max(...items.map(val), 1);
 
   return `<div class="bar-list">${items.map((it) => {
     const pct = Math.max((val(it) / max) * 100, 2);
-    const eva = isEvaFn(it);
+    const isHero = isHeroFn(it);
     return `
       <div class="bar-row">
-        <div class="bar-label ${eva ? 'is-eva' : ''}">${escapeHTML(it[labelKey])}${eva ? '<span class="eva-tag">LUMINA</span>' : ''}</div>
+        <div class="bar-label ${isHero ? 'is-hero' : ''}">${escapeHTML(it[labelKey])}${isHero ? '<span class="hero-tag">LUMINA</span>' : ''}</div>
         <div class="bar-track">
-          <div class="bar-fill ${eva ? 'is-eva' : ''}" style="width:${pct}%">
+          <div class="bar-fill ${isHero ? 'is-hero' : ''}" style="width:${pct}%">
             <span class="bar-fill-label">${fmtPct(it[shareKey])}</span>
           </div>
         </div>
@@ -311,16 +311,16 @@ function barListHTML(items, opts) {
   }).join('')}</div>`;
 }
 
-function isEvaOwner(name) {
+function isHeroOwner(name) {
   return (name || '').trim().toUpperCase() === 'LUMINA COSMETICS';
 }
 
-function isEvaBrandGuess(brand) {
+function isHeroBrandGuess(brand) {
   // Used only for lightweight visual highlighting on brand-level pages where
   // the backend already scoped to All Purpose Cream; the brand "GPC" and its
-  // sibling EVA lines are the ones worth calling out visually.
-  const evaBrands = ['LUMORA', 'VELARA', 'PURELINE', 'DERMORA'];
-  return evaBrands.includes((brand || '').trim().toUpperCase());
+  // sibling Lumina lines are the ones worth calling out visually.
+  const heroBrands = ['LUMORA', 'VELARA', 'PURELINE', 'DERMORA'];
+  return heroBrands.includes((brand || '').trim().toUpperCase());
 }
 
 /* ---------------------------------------------------------------------- */
@@ -470,7 +470,7 @@ async function renderOverviewPage() {
       <div class="card">
         <p class="card-eyebrow"><span class="section-index">2.3</span>Sub-Category Split — ${escapeHTML(data.category.name)}</p>
         <h3 class="card-title">${escapeHTML(splitLabel)}</h3>
-        <p class="card-note">Sales value (EGP) within ${escapeHTML(data.category.name)}, by EVA Category 3, at ${data.anchor_period}.</p>
+        <p class="card-note">Sales value (EGP) within ${escapeHTML(data.category.name)}, by Product Category 3, at ${data.anchor_period}.</p>
         <div class="chart-box"><canvas id="subcat-chart"></canvas></div>
       </div>
       <div class="card">
@@ -488,15 +488,15 @@ async function renderOverviewPage() {
         </div>
         ${data.has_segments ? `
         <p class="card-note" style="margin-top:14px;margin-bottom:0;">
-          <strong>"Unclassified"</strong> = ${escapeHTML(data.category.name)} rows whose EVA Category 3 value is not
+          <strong>"Unclassified"</strong> = ${escapeHTML(data.category.name)} rows whose Product Category 3 value is not
           ${escapeHTML(subcats.filter((s) => s.name !== 'Unclassified').map((s) => s.name).join(' or '))}
           (blank, "0", or another non-standard label in the raw data). These sales are real and are counted in the
           ${escapeHTML(data.category.name)} total above — they're broken out here instead of being hidden, since they
           can't be assigned to a named sub-category.
         </p>` : `
-        <p class="card-note" style="margin-top:14px;margin-bottom:0;">No meaningful EVA Category 3 sub-category split was detected for ${escapeHTML(data.category.name)}, so this shows the overall category total instead.</p>`}
+        <p class="card-note" style="margin-top:14px;margin-bottom:0;">No meaningful Product Category 3 sub-category split was detected for ${escapeHTML(data.category.name)}, so this shows the overall category total instead.</p>`}
       </div>
-      <p class="footer-note">Total-market figures use Markets = TOTAL EGYPT+PERFUMERY only. ${data.has_segments ? 'Sub-category names are EVA Category 3 values; rows outside the named segments are grouped as Unclassified, not hidden.' : ''}</p>
+      <p class="footer-note">Total-market figures use Markets = TOTAL EGYPT+PERFUMERY only. ${data.has_segments ? 'Sub-category names are Product Category 3 values; rows outside the named segments are grouped as Unclassified, not hidden.' : ''}</p>
     `;
 
     const kpiWrap = document.getElementById('overview-kpis');
@@ -618,9 +618,9 @@ async function renderBrandOwnersPage() {
         return;
       }
       tbody.innerHTML = rows.map((o) => `
-        <tr class="${o.is_eva ? 'is-eva' : ''}">
+        <tr class="${o.is_hero ? 'is-hero' : ''}">
           <td class="rank">${o.rank}</td>
-          <td>${escapeHTML(o.brand_owner)}${o.is_eva ? '<span class="eva-tag">LUMINA</span>' : ''}</td>
+          <td>${escapeHTML(o.brand_owner)}${o.is_hero ? '<span class="hero-tag">LUMINA</span>' : ''}</td>
           ${periodCellsHTML(o, displayPeriods)}
           <td class="num">${fmtPct(o.share_pct)}</td>
         </tr>
@@ -641,9 +641,9 @@ function renderOwnerBarList(items, anchor) {
     const pct = Math.max((val(it) / max) * 100, 2);
     return `
       <div class="bar-row">
-        <div class="bar-label ${it.is_eva ? 'is-eva' : ''}">${escapeHTML(it.brand_owner)}${it.is_eva ? '<span class="eva-tag">LUMINA</span>' : ''}</div>
+        <div class="bar-label ${it.is_hero ? 'is-hero' : ''}">${escapeHTML(it.brand_owner)}${it.is_hero ? '<span class="hero-tag">LUMINA</span>' : ''}</div>
         <div class="bar-track">
-          <div class="bar-fill ${it.is_eva ? 'is-eva' : ''}" style="width:${pct}%">
+          <div class="bar-fill ${it.is_hero ? 'is-hero' : ''}" style="width:${pct}%">
             <span class="bar-fill-label">${fmtPct(it.share_pct)}</span>
           </div>
         </div>
@@ -674,7 +674,7 @@ async function renderBrandLevelPage() {
     if (titleEl) titleEl.textContent = `Brand Level — ${data.category}`;
     if (subtitleEl) {
       subtitleEl.textContent = data.has_segments
-        ? `${data.segments.map((s) => s.name).join(' / ')} sub-categories (EVA Category 3) · sorted by latest MAT sales value`
+        ? `${data.segments.map((s) => s.name).join(' / ')} sub-categories (Product Category 3) · sorted by latest MAT sales value`
         : `Brand ranking · sorted by latest MAT sales value`;
     }
 
@@ -753,8 +753,8 @@ async function renderBrandLevelPage() {
         </div>
       </div>
       <p class="footer-note">${data.has_segments
-        ? `Scope: ${escapeHTML(data.category)}. ${data.segments.map((s) => s.name).join(' / ')} are EVA Category 3 values, not Category 2.`
-        : `Scope: ${escapeHTML(data.category)}. No meaningful EVA Category 3 segmentation was detected for this category, so this view shows the overall brand ranking instead.`}</p>
+        ? `Scope: ${escapeHTML(data.category)}. ${data.segments.map((s) => s.name).join(' / ')} are Product Category 3 values, not Category 2.`
+        : `Scope: ${escapeHTML(data.category)}. No meaningful Product Category 3 segmentation was detected for this category, so this view shows the overall brand ranking instead.`}</p>
     `;
 
     const universeCard = `
@@ -779,15 +779,15 @@ async function renderBrandLevelPage() {
       if (leaderEl) {
         leaderEl.innerHTML = barListHTML(seg.top10, {
           valueKey: data.anchor_period,
-          isEvaFn: (it) => isEvaBrandGuess(it.brand),
+          isHeroFn: (it) => isHeroBrandGuess(it.brand),
         });
       }
 
       const perfEl = document.getElementById(`bl-perf-${slugify(seg.name)}`);
       if (perfEl) {
         perfEl.innerHTML = seg.top30.map((r) => `
-          <tr class="${isEvaBrandGuess(r.brand) ? 'is-eva' : ''}">
-            <td>${escapeHTML(r.brand)}${isEvaBrandGuess(r.brand) ? '<span class="eva-tag">LUMINA</span>' : ''}</td>
+          <tr class="${isHeroBrandGuess(r.brand) ? 'is-hero' : ''}">
+            <td>${escapeHTML(r.brand)}${isHeroBrandGuess(r.brand) ? '<span class="hero-tag">LUMINA</span>' : ''}</td>
             ${periodCellsHTML(r, displayPeriods)}
             <td class="num">${fmtPct(r.share_of_category_pct)}</td>
             <td class="num">${fmtPct(r.share_of_subcategory_pct)}</td>
@@ -797,8 +797,8 @@ async function renderBrandLevelPage() {
     });
 
     document.getElementById('bl-top15-table-body').innerHTML = data.top30.map((r) => `
-      <tr class="${isEvaBrandGuess(r.brand) ? 'is-eva' : ''}">
-        <td>${escapeHTML(r.brand)}${isEvaBrandGuess(r.brand) ? '<span class="eva-tag">LUMINA</span>' : ''}</td>
+      <tr class="${isHeroBrandGuess(r.brand) ? 'is-hero' : ''}">
+        <td>${escapeHTML(r.brand)}${isHeroBrandGuess(r.brand) ? '<span class="hero-tag">LUMINA</span>' : ''}</td>
         ${periodCellsHTML(r, displayPeriods)}
         <td class="num">${fmtPct(r.share_of_category_pct)}</td>
       </tr>
@@ -919,8 +919,8 @@ async function renderMarketDimensionPage(dimension) {
         </div>
       </div>
       <p class="footer-note">${data.has_segments
-        ? `Scope: ${escapeHTML(data.category)}. ${segmentNames.join(' / ')} are EVA Category 3 values.`
-        : `Scope: ${escapeHTML(data.category)}. No meaningful EVA Category 3 segmentation was detected for this category, so this view shows the overall brand ranking instead.`}</p>
+        ? `Scope: ${escapeHTML(data.category)}. ${segmentNames.join(' / ')} are Product Category 3 values.`
+        : `Scope: ${escapeHTML(data.category)}. No meaningful Product Category 3 segmentation was detected for this category, so this view shows the overall brand ranking instead.`}</p>
     `;
 
     document.getElementById('total-market-contribution-body').innerHTML = (data.total_market_contribution || []).map((r) => `
@@ -959,8 +959,8 @@ async function renderMarketDimensionPage(dimension) {
         if (!el) return;
         if (seg && seg.top10.length) {
           el.innerHTML = seg.top10.map((r) => `
-            <tr class="${isEvaBrandGuess(r.brand) ? 'is-eva' : ''}">
-              <td>${escapeHTML(r.brand)}${isEvaBrandGuess(r.brand) ? '<span class="eva-tag">LUMINA</span>' : ''}</td>
+            <tr class="${isHeroBrandGuess(r.brand) ? 'is-hero' : ''}">
+              <td>${escapeHTML(r.brand)}${isHeroBrandGuess(r.brand) ? '<span class="hero-tag">LUMINA</span>' : ''}</td>
               ${periodCellsHTML(r, displayPeriods)}
             </tr>
           `).join('');
@@ -1007,8 +1007,8 @@ function skuLeaderboardTableHTML(segmentData, segmentLabel) {
         </thead>
         <tbody>
           ${rows.map((r) => `
-            <tr class="${isEvaBrandGuess(r.brand) ? 'is-eva' : ''}">
-              <td>${escapeHTML(r.brand)}${isEvaBrandGuess(r.brand) ? '<span class="eva-tag">LUMINA</span>' : ''}</td>
+            <tr class="${isHeroBrandGuess(r.brand) ? 'is-hero' : ''}">
+              <td>${escapeHTML(r.brand)}${isHeroBrandGuess(r.brand) ? '<span class="hero-tag">LUMINA</span>' : ''}</td>
               <td>${escapeHTML(r.sku)}</td>
               ${periodCellsHTML(r, displayPeriods)}
             </tr>

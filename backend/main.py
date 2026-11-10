@@ -56,7 +56,7 @@ CHANNEL_MARKETS = [
     'SEMI RETAILERS'
 ]
 
-EVA_BRAND_OWNER = 'LUMINA COSMETICS'  # the ONLY brand owner treated as internal/EVA
+HERO_BRAND_OWNER = 'LUMINA COSMETICS'  # the ONLY brand owner treated as internal/hero
 ALL_PURPOSE_CREAM = 'All Purpose Cream'
 PERIODS_ORDER = ['Apr-24', 'Apr-25', 'Apr-26']
 
@@ -67,11 +67,11 @@ PERIODS_ORDER = ['Apr-24', 'Apr-25', 'Apr-26']
 ALL_PERIOD = 'ALL'
 PERIODS_WITH_ALL = PERIODS_ORDER + [ALL_PERIOD]
 
-# EVA Category 1 values that are unclassified placeholders, not real product
+# Product Category 1 values that are unclassified placeholders, not real product
 # categories -- never offered in a category picker.
 EXCLUDED_CATEGORIES = {'A Needed Malak', 'not found'}
 
-# Values in EVA Category 3 that mean "no sub-category info", across ALL
+# Values in Product Category 3 that mean "no sub-category info", across ALL
 # categories (not just All Purpose Cream's '0').
 JUNK_CATEGORY3 = {'0', 'nan', '', 'none'}
 
@@ -142,10 +142,10 @@ async def load_data():
         # 'COASTAL MT (NC/RS/SS)' which silently breaks any exact-match filter.
         df['Markets'] = df['Markets'].astype(str).str.replace('\xa0', ' ', regex=False).str.strip()
 
-        # Normalize EVA Category 3 for the All Purpose Cream GPC/Medical split.
+        # Normalize Product Category 3 for the All Purpose Cream GPC/Medical split.
         # Sparse/placeholder values ('0', blank, NaN) are kept visible as
         # 'Unclassified' per the build rule, never silently dropped.
-        df['EVA Category 3'] = df['EVA Category 3'].astype(str).str.strip()
+        df['Product Category 3'] = df['Product Category 3'].astype(str).str.strip()
 
         print(f"\n[OK] Loaded cleaned data:")
         print(f"  Rows: {len(df):,}")
@@ -153,7 +153,7 @@ async def load_data():
         print(f"  File: {CLEANED_DATA_PATH}")
 
         # Check for required columns
-        required_cols = ['Markets', 'Periods', 'Sales Value', 'ITEM CODE', 'EVA Category 1', 'Period_Short']
+        required_cols = ['Markets', 'Periods', 'Sales Value', 'ITEM CODE', 'Product Category 1', 'Period_Short']
         missing = [col for col in required_cols if col not in df.columns]
         if missing:
             print(f"\n[WARNING] Missing columns: {missing}")
@@ -221,12 +221,12 @@ def get_total_market_data(period=None):
     if period:
         total_market_df = apply_period_filter(total_market_df, period)
 
-    # Fill NULL values in EVA Category 1 with "[Unknown]" for display
-    total_market_df['EVA Category 1'] = total_market_df['EVA Category 1'].fillna('[Unknown]')
+    # Fill NULL values in Product Category 1 with "[Unknown]" for display
+    total_market_df['Product Category 1'] = total_market_df['Product Category 1'].fillna('[Unknown]')
 
     # Group by period and category
     agg = total_market_df.groupby(
-        ['Period_Short', 'Period_Sort_Order', 'EVA Category 1', 'is_unclassified'],
+        ['Period_Short', 'Period_Sort_Order', 'Product Category 1', 'is_unclassified'],
         as_index=False
     )['Sales Value'].sum()
 
@@ -341,7 +341,7 @@ def get_brand_data(period=None):
 
 
 def get_brand_category_data(period=None):
-    """Get sales data grouped by Brand Owner, Category (EVA Category 1), and Period
+    """Get sales data grouped by Brand Owner, Category (Product Category 1), and Period
 
     This powers Tab 4 - Mode 3 "Category Comparison", e.g. comparing
     LUMINA COSMETICS vs a competitor owner within a single category such as "Facial Care".
@@ -362,10 +362,10 @@ def get_brand_category_data(period=None):
         work_df = apply_period_filter(work_df, period)
 
     # Fill NULL categories for consistency with get_category_analysis()
-    work_df['EVA Category 1'] = work_df['EVA Category 1'].fillna('[Unknown]')
+    work_df['Product Category 1'] = work_df['Product Category 1'].fillna('[Unknown]')
 
     cat_brand_df = work_df.groupby(
-        ['BRAND OWNER', 'EVA Category 1', 'Period_Short', 'Period_Sort_Order'],
+        ['BRAND OWNER', 'Product Category 1', 'Period_Short', 'Period_Sort_Order'],
         as_index=False
     ).agg({
         'Sales Value': 'sum',
@@ -399,7 +399,7 @@ def get_sku_data(period=None, category=None):
 
     Args:
         period: Filter by period ('Apr-24', 'Apr-25', 'Apr-26', 'ALL') or None for all
-        category: Scope to one EVA Category 1 value (global category filter), or None for all
+        category: Scope to one Product Category 1 value (global category filter), or None for all
     """
     valid_categories = [c['name'] for c in get_real_categories()]
     scoped_category = category if category in valid_categories else None
@@ -407,12 +407,12 @@ def get_sku_data(period=None, category=None):
     # --- Total Sales: master market only ---
     sales_df = df[df['Markets'] == MASTER_MARKET].copy()
     if scoped_category:
-        sales_df = sales_df[sales_df['EVA Category 1'] == scoped_category]
+        sales_df = sales_df[sales_df['Product Category 1'] == scoped_category]
     if period:
         sales_df = apply_period_filter(sales_df, period)
 
     sales_agg = sales_df.groupby(
-        ['ITEM CODE', 'ITEM', 'BRAND', 'EVA Category 1'],
+        ['ITEM CODE', 'ITEM', 'BRAND', 'Product Category 1'],
         as_index=False
     )['Sales Value'].sum()
     sales_agg.columns = ['Item Code', 'Item Name', 'Brand', 'Category', 'Total Sales']
@@ -420,7 +420,7 @@ def get_sku_data(period=None, category=None):
     # --- Market reach: distinct non-master markets carrying the SKU ---
     reach_df = df[df['Markets'] != MASTER_MARKET].copy()
     if scoped_category:
-        reach_df = reach_df[reach_df['EVA Category 1'] == scoped_category]
+        reach_df = reach_df[reach_df['Product Category 1'] == scoped_category]
     if period:
         reach_df = apply_period_filter(reach_df, period)
 
@@ -451,11 +451,11 @@ def get_sku_leaderboard(category=None, segment=None, period=None, top_n=30):
     if category not in valid_categories:
         category = ALL_PURPOSE_CREAM
 
-    base = df[(df['Markets'] == MASTER_MARKET) & (df['EVA Category 1'] == category)].copy()
+    base = df[(df['Markets'] == MASTER_MARKET) & (df['Product Category 1'] == category)].copy()
     has_segments, segment_names = detect_segments(base)
 
     if has_segments:
-        base['SubCategory'] = base['EVA Category 3'].apply(
+        base['SubCategory'] = base['Product Category 3'].apply(
             lambda v: v if v in segment_names else 'Unclassified'
         )
     else:
@@ -563,12 +563,12 @@ def get_category_analysis(period=None):
 
     # Group by category and period
     cat_agg = total_market_df.groupby(
-        ['EVA Category 1', 'Period_Short'],
+        ['Product Category 1', 'Period_Short'],
         as_index=False
     )['Sales Value'].sum()
 
     # Pivot to get periods as columns
-    cat_pivot = cat_agg.pivot(index='EVA Category 1', columns='Period_Short', values='Sales Value')
+    cat_pivot = cat_agg.pivot(index='Product Category 1', columns='Period_Short', values='Sales Value')
     cat_pivot = cat_pivot.fillna(0)
 
     # Calculate totals
@@ -614,14 +614,14 @@ def _add_all_col(pivot_df):
 
 
 def get_real_categories():
-    """List of real product categories (EVA Category 1), excluding the
+    """List of real product categories (Product Category 1), excluding the
     unclassified placeholders 'A Needed Malak' and 'not found'. Sorted by
     total sales value descending, using TOTAL EGYPT+PERFUMERY across all
     periods so the ordering is stable regardless of which period is selected.
     """
     tm = df[df['Markets'] == MASTER_MARKET]
-    tm = tm[~tm['EVA Category 1'].isin(EXCLUDED_CATEGORIES)]
-    totals = tm.groupby('EVA Category 1')['Sales Value'].sum().sort_values(ascending=False)
+    tm = tm[~tm['Product Category 1'].isin(EXCLUDED_CATEGORIES)]
+    totals = tm.groupby('Product Category 1')['Sales Value'].sum().sort_values(ascending=False)
     return [
         {'name': name, 'total_sales': float(val)}
         for name, val in totals.items()
@@ -629,8 +629,8 @@ def get_real_categories():
 
 
 def detect_segments(category_df):
-    """Decide whether EVA Category 3 gives a meaningful sub-category split
-    for this slice of data (already filtered to one EVA Category 1 value,
+    """Decide whether Product Category 3 gives a meaningful sub-category split
+    for this slice of data (already filtered to one Product Category 1 value,
     across ALL periods so the decision is period-independent).
 
     Returns (has_segments: bool, segment_names: list[str] sorted by sales desc).
@@ -643,7 +643,7 @@ def detect_segments(category_df):
     if not total:
         return False, []
 
-    by_cat3 = category_df.groupby('EVA Category 3')['Sales Value'].sum()
+    by_cat3 = category_df.groupby('Product Category 3')['Sales Value'].sum()
     real = {k: v for k, v in by_cat3.items() if k.lower() not in JUNK_CATEGORY3}
     if not real:
         return False, []
@@ -662,11 +662,11 @@ def detect_segments(category_df):
 
 
 def get_overview_data(period=None, category=None):
-    """Total Market -> selected category -> EVA Category 3 sub-category split.
+    """Total Market -> selected category -> Product Category 3 sub-category split.
 
     CRITICAL: All figures use ONLY Markets == 'TOTAL EGYPT+PERFUMERY'.
     Adaptive across ALL real categories (same detect_segments() logic as
-    Brand Level / Channels / Regions): when EVA Category 3 gives a meaningful
+    Brand Level / Channels / Regions): when Product Category 3 gives a meaningful
     split (e.g. GPC/Medical for All Purpose Cream), 'subcategories' has one
     entry per real segment plus 'Unclassified'; otherwise a single 'Overall'
     entry covering the whole category. Defaults to All Purpose Cream when no
@@ -681,12 +681,12 @@ def get_overview_data(period=None, category=None):
     total_market_df = df[df['Markets'] == MASTER_MARKET]
     total_market_by_period = _period_series(total_market_df)
 
-    cat_df = total_market_df[total_market_df['EVA Category 1'] == category].copy()
+    cat_df = total_market_df[total_market_df['Product Category 1'] == category].copy()
     cat_by_period = _period_series(cat_df)
 
     has_segments, segment_names = detect_segments(cat_df)
     if has_segments:
-        cat_df['SubCategory'] = cat_df['EVA Category 3'].apply(
+        cat_df['SubCategory'] = cat_df['Product Category 3'].apply(
             lambda v: v if v in segment_names else 'Unclassified'
         )
         names_to_render = segment_names + ['Unclassified']
@@ -728,7 +728,7 @@ def get_overview_data(period=None, category=None):
 
 def get_brand_owners_data(period=None, top_n=None, category=None):
     """Brand owner ranking + multi-MAT growth table.
-    Scope: Markets == TOTAL EGYPT+PERFUMERY. Scoped to a single EVA Category 1
+    Scope: Markets == TOTAL EGYPT+PERFUMERY. Scoped to a single Product Category 1
     when `category` is given (the global category filter applies here too);
     otherwise covers ALL categories, the original default.
 
@@ -745,7 +745,7 @@ def get_brand_owners_data(period=None, top_n=None, category=None):
 
     bo_df = df[df['Markets'] == MASTER_MARKET].copy()
     if scoped_category:
-        bo_df = bo_df[bo_df['EVA Category 1'] == scoped_category]
+        bo_df = bo_df[bo_df['Product Category 1'] == scoped_category]
     bo_df['BRAND OWNER'] = bo_df['BRAND OWNER'].fillna('[Unknown]')
 
     by_period = bo_df.groupby(['BRAND OWNER', 'Period_Short'])['Sales Value'].sum().unstack(fill_value=0)
@@ -768,7 +768,7 @@ def get_brand_owners_data(period=None, top_n=None, category=None):
         records.append({
             'rank': rank,
             'brand_owner': owner,
-            'is_eva': owner == EVA_BRAND_OWNER,
+            'is_hero': owner == HERO_BRAND_OWNER,
             'Apr-24': float(row['Apr-24']),
             'Apr-25': float(row['Apr-25']),
             'Apr-26': float(row['Apr-26']),
@@ -789,7 +789,7 @@ def get_brand_owners_data(period=None, top_n=None, category=None):
 def get_brand_level_data(category=None, period=None):
     """Brand-level drilldown for ANY real category (adaptive).
 
-    If EVA Category 3 gives a meaningful split for this category (verified
+    If Product Category 3 gives a meaningful split for this category (verified
     via detect_segments), 'segments' has one entry per real segment
     (e.g. GPC, Medical for All Purpose Cream). If not, 'segments' has a
     single entry named 'Overall' covering the whole category -- so the
@@ -804,11 +804,11 @@ def get_brand_level_data(category=None, period=None):
     total_market_df = df[df['Markets'] == MASTER_MARKET]
     total_market_by_period = _period_series(total_market_df)
 
-    cat_df = total_market_df[total_market_df['EVA Category 1'] == category].copy()
+    cat_df = total_market_df[total_market_df['Product Category 1'] == category].copy()
     has_segments, segment_names = detect_segments(cat_df)
 
     if has_segments:
-        cat_df['SubCategory'] = cat_df['EVA Category 3'].apply(
+        cat_df['SubCategory'] = cat_df['Product Category 3'].apply(
             lambda v: v if v in segment_names else 'Unclassified'
         )
     else:
@@ -956,7 +956,7 @@ def _market_contribution_to_total(market_list, dimension_name, period=None):
 def _channel_or_region_analysis(period, market_list, dimension_name, category=None):
     """Shared logic for Channels and Regions pages, for ANY real category.
 
-    Adaptive segments same as get_brand_level_data: if EVA Category 3 gives
+    Adaptive segments same as get_brand_level_data: if Product Category 3 gives
     a meaningful split, 'segments' has one entry per real segment; otherwise
     a single 'Overall' entry covering the whole category. Frontend always
     just loops over 'segments'.
@@ -969,12 +969,12 @@ def _channel_or_region_analysis(period, market_list, dimension_name, category=No
 
     scoped = df[
         (df['Markets'].isin(market_list)) &
-        (df['EVA Category 1'] == category)
+        (df['Product Category 1'] == category)
     ].copy()
 
     has_segments, segment_names = detect_segments(scoped)
     if has_segments:
-        scoped['SubCategory'] = scoped['EVA Category 3'].apply(
+        scoped['SubCategory'] = scoped['Product Category 3'].apply(
             lambda v: v if v in segment_names else 'Unclassified'
         )
     else:
@@ -1238,7 +1238,7 @@ async def skus(period: str = None, category: str = None):
 
     Query Parameters:
         period: Period filter ('Apr-24', 'Apr-25', 'Apr-26', 'ALL') or None for all
-        category: Scope to one EVA Category 1 value, or None for all categories
+        category: Scope to one Product Category 1 value, or None for all categories
     """
     try:
         print(f"[API] /api/skus requested with period={period} category={category}")
@@ -1347,7 +1347,7 @@ async def brand_owners(period: str = None, category: str = None):
 @app.get("/api/categories")
 async def categories():
     """
-    List of real product categories (EVA Category 1), excluding the
+    List of real product categories (Product Category 1), excluding the
     unclassified placeholders. Used to populate category pickers on
     Brand Level / Channels / Regions.
     """

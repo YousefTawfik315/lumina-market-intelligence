@@ -388,7 +388,7 @@ a { color: inherit; text-decoration: none; }
   text-overflow: ellipsis;
 }
 
-.bar-row .bar-label.is-eva { color: var(--green-700); }
+.bar-row .bar-label.is-hero { color: var(--green-700); }
 
 .bar-track {
   background: var(--bg);
@@ -409,7 +409,7 @@ a { color: inherit; text-decoration: none; }
   min-width: 2%;
 }
 
-.bar-fill.is-eva { background: linear-gradient(90deg, var(--green-900), var(--green-600)); }
+.bar-fill.is-hero { background: linear-gradient(90deg, var(--green-900), var(--green-600)); }
 
 .bar-fill-label {
   font-size: 10.5px;
@@ -459,8 +459,8 @@ table.data-table {
 }
 
 .data-table tbody tr:hover { background: var(--bg); }
-.data-table tbody tr.is-eva { background: var(--green-100); }
-.data-table tbody tr.is-eva:hover { background: var(--green-200); }
+.data-table tbody tr.is-hero { background: var(--green-100); }
+.data-table tbody tr.is-hero:hover { background: var(--green-200); }
 
 .data-table td.rank {
   color: var(--text-muted);
@@ -468,7 +468,7 @@ table.data-table {
   width: 34px;
 }
 
-.eva-tag {
+.hero-tag {
   display: inline-block;
   margin-left: 6px;
   padding: 1px 7px;
